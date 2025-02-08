@@ -43,6 +43,9 @@ CUSTOM_APPS = [
     'allauth.account',
     'allauth.socialaccount',
     'allauth.socialaccount.providers.kakao',
+    "rest_framework",
+    "corsheaders",
+    "rest_framework_simplejwt",
 ]
 
 
@@ -71,6 +74,7 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     "allauth.account.middleware.AccountMiddleware",
+    "corsheaders.middleware.CorsMiddleware",
 ]
 
 ROOT_URLCONF = 'config.urls'
@@ -108,6 +112,16 @@ DATABASES = {
     }
 }
 
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:5173",  # 프론트엔드 주소
+]
+CORS_ALLOW_CREDENTIALS = True  # 쿠키 포함 요청 허용
+
+REST_FRAMEWORK = {
+    "DEFAULT_AUTHENTICATION_CLASSES": (
+        "rest_framework_simplejwt.authentication.JWTAuthentication",
+    ),
+}
 
 
 # Password validation
