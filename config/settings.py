@@ -24,12 +24,12 @@ ENV = dotenv_values(".env")
 # See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-g(f#(w%m)%%f7ewi6*u4*j((e_)pe&twep6#1ap7d#^%=!hdrl'
+SECRET_KEY = ENV.get("DJANGO_SECRET_KEY")
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ["127.0.0.1", "localhost", "0.0.0.0"]
 
 
 # Application definition
@@ -69,6 +69,7 @@ AUTHENTICATION_BACKENDS = [
 ]
 
 MIDDLEWARE = [
+    "corsheaders.middleware.CorsMiddleware",
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -77,7 +78,6 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     "allauth.account.middleware.AccountMiddleware",
-    "corsheaders.middleware.CorsMiddleware",
 ]
 
 ROOT_URLCONF = 'config.urls'
@@ -126,7 +126,10 @@ CORS_ALLOW_CREDENTIALS = True  # 쿠키 포함 요청 허용
 CORS_ALLOW_METHODS = [
     "GET",
     "POST",
-    "OPTIONS",  # 이걸 추가해야 preflight 요청 허용됨
+    "DELETE",
+    "OPTIONS",
+    "PATCH",
+    "PUT",
 ]
 
 
@@ -161,7 +164,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'Asia/Seoul'
 
 USE_I18N = True
 
@@ -179,24 +182,29 @@ STATIC_URL = 'static/'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 
-# kakao oauth
-
-KAKAO_REDIRECT_URI = os.getenv("KAKAO_REDIRECT_URI")
+# Kakao OAuth 설정
+KAKAO_CLIENT_ID = ENV.get("KAKAO_CLIENT_ID")
+KAKAO_REDIRECT_URI = ENV.get("KAKAO_REDIRECT_URI")
+KAKAO_SECRET = ENV.get("KAKAO_SECRET")
 
 SITE_ID = 1
 
-SOCIAL_AUTH_KAKAO = {
-    'APP': {
-        'client_id': ENV.get("KAKAO_CLIENT_ID"),
-        'secret': ENV.get("KAKAO_SECRET"),
-        'key': ENV.get("KAKAO_KEY", ""),  # 기본값을 빈 문자열로 설정
-    },
-    'SCOPE': ENV.get("KAKAO_SCOPE", "").split(","),  # 쉼표로 구분된 문자열을 리스트로 변환
-    'AUTH_PARAMS': {'prompt': ENV.get("KAKAO_AUTH_PROMPT", "login")},
-}
+# SOCIAL_AUTH_KAKAO = {
+#     'APP': {
+#         'client_id': ENV.get("KAKAO_CLIENT_ID"),
+#         'secret': ENV.get("KAKAO_SECRET"),
+#         'key': ENV.get("KAKAO_KEY", ""),  # 기본값을 빈 문자열로 설정
+#     },
+#     'SCOPE': ENV.get("KAKAO_SCOPE", "").split(","),  # 쉼표로 구분된 문자열을 리스트로 변환
+#     'AUTH_PARAMS': {'prompt': ENV.get("KAKAO_AUTH_PROMPT", "login")},
+# }
 
-SOCIALACCOUNT_ADAPTER = 'users.signals.MySocialAccountAdapter'
+# SOCIALACCOUNT_ADAPTER = 'users.signals.MySocialAccountAdapter'
 
 # 로그인 성공 후 메인페이지로 이동할 수 있도록.
 LOGIN_REDIRECT_URL = '/'
 LOGOUT_REDIRECT_URL = '/'
+
+
+NAVER_CLIENT_ID=ENV.get("NAVER_CLIENT_ID")
+NAVER_CLIENT_SECRET=ENV.get("NAVER_CLIENT_SECRET")
