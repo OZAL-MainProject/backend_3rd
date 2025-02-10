@@ -19,7 +19,6 @@ gunicorn = "^23.0.0"
 djangorestframework-simplejwt = "^5.4.0"
 drf-yasg = "^1.21.8"
 django-cors-headers = "^4.7.0"
-serializers = "^0.2.4"
 
 
 [build-system]
