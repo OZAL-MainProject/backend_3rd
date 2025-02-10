@@ -76,3 +76,9 @@ def kakao_login(request):
             "profile_image": user.profile_image,
         },
     })
+
+@api_view(["GET"])
+def kakao_callback(request):
+    """카카오 로그인 Redirect URI에 대한 처리"""
+    return Response({"message": "카카오 로그인 완료!"})
+
