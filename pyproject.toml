@@ -17,9 +17,9 @@ psycopg2 = "^2.9.10"
 djangorestframework = "^3.15.2"
 psycopg2-binary = "^2.9.10"
 gunicorn = "^23.0.0"
-django-cors-headers = "^4.7.0"
 djangorestframework-simplejwt = "^5.4.0"
 drf-yasg = "^1.21.8"
+django-cors-headers = "^4.7.0"
 
 
 [build-system]
