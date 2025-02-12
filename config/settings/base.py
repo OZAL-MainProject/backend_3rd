@@ -14,7 +14,7 @@ from pathlib import Path
 from dotenv import load_dotenv, dotenv_values
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
-BASE_DIR = Path(__file__).resolve().parent.parent
+BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
 load_dotenv()
 
@@ -29,7 +29,7 @@ SECRET_KEY = ENV.get("DJANGO_SECRET_KEY")
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ["127.0.0.1", "localhost", "0.0.0.0"]
+ALLOWED_HOSTS = []
 
 
 # Application definition
@@ -48,7 +48,6 @@ CUSTOM_APPS = [
     "rest_framework",
     "corsheaders",
     "rest_framework_simplejwt",
-    'drf_yasg',
 ]
 
 
@@ -115,12 +114,8 @@ DATABASES = {
     }
 }
 
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:5173",  # 프론트엔드 주소
-    "http://127.0.0.1:5173",
-    "http://127.0.0.1:8000",
-    "http://localhost:8000",
-]
+CORS_ALLOWED_ORIGINS = []
+
 CORS_ALLOW_CREDENTIALS = True  # 쿠키 포함 요청 허용
 
 CORS_ALLOW_METHODS = [
