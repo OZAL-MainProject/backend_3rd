@@ -35,7 +35,7 @@ class KakaoLoginView(APIView):
 
         if not access_token:
             return Response(status=status.HTTP_400_BAD_REQUEST)
-        access_token = f"Bearer {access_token}"  # 'Bearer ' 마지막 띄어쓰기 필수
+
 
         # 2️⃣ 유저 정보 요청
         user_info_url = "https://kapi.kakao.com/v2/user/me"

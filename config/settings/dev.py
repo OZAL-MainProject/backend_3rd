@@ -1,6 +1,8 @@
 from .base import *
 
-DEBUG = True # ALLOWED_HOSTS = ["*"]
+DEBUG = True #
+
+ALLOWED_HOSTS = ["*"]
 
 DATABASES = {
     "default": {
