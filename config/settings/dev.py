@@ -2,10 +2,6 @@ from .base import *
 
 DEBUG = True # ALLOWED_HOSTS = ["*"]
 
-CUSTOM_APPS += [
-    'drf_yasg', # swaggerUI 보게 해주는 라이브러리
-]
-
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.sqlite3",

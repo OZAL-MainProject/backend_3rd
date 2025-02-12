@@ -1,0 +1,26 @@
+services:
+  ozal-server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: always
+    container_name: ozal-server
+    env_file:
+      - .env
+    volumes:
+      - .:/app
+      - ./static:/app/static
+    ports:
+      - "8000:8000"
+
+  nginx:
+    image: nginx:latest
+    container_name: ozal-nginx
+    restart: always
+    ports:
+      - "80:80"
+    depends_on:
+      - ozal-server
+    volumes:
+      - ./nginx/ozal_app.conf:/etc/nginx/conf.d/default.conf
+      - ./static:/app/static

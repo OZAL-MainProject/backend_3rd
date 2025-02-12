@@ -103,16 +103,6 @@ WSGI_APPLICATION = 'config.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.postgresql",
-        "HOST": ENV.get("POSTGRES_HOST"),  # 기본값 제거
-        "USER": ENV.get("POSTGRES_USER"),
-        "PASSWORD": ENV.get("POSTGRES_PASSWORD"),
-        "NAME": ENV.get("POSTGRES_DBNAME"),
-        "PORT": ENV.get("POSTGRES_PORT"),
-    }
-}
 
 CORS_ALLOWED_ORIGINS = []
 
@@ -170,6 +160,7 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.1/howto/static-files/
 
 STATIC_URL = 'static/'
+STATIC_ROOT = BASE_DIR / "static"
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
