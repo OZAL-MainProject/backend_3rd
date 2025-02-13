@@ -6,8 +6,12 @@ ALLOWED_HOSTS = ["*"]
 
 DATABASES = {
     "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
+        "ENGINE": "django.db.backends.postgresql",
+        "HOST": ENV.get("POSTGRES_HOST"),  # 기본값 제거
+        "USER": ENV.get("POSTGRES_USER"),
+        "PASSWORD": ENV.get("POSTGRES_PASSWORD"),
+        "NAME": ENV.get("POSTGRES_DBNAME"),
+        "PORT": ENV.get("POSTGRES_PORT"),
     }
 }
 
