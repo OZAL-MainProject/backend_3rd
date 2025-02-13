@@ -17,7 +17,7 @@ jobs:
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Docker Build
-        run: docker-compose build app
+        run: docker-compose up --build app
 
       - name: Start Containers
         run: docker-compose up -d
