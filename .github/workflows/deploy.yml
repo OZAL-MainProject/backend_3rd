@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - develop  # develop 브랜치에 push될 때 실행
+  pull_request:
+    branches:
+      - develop
 
 jobs:
   deploy:
@@ -30,7 +33,7 @@ jobs:
         with:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USER }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
+#          key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
             echo "DB_HOST=database.example.com" > .env  # 필요한 경우 환경 변수 생성
             docker pull ${{ secrets.DOCKERHUB_NAME }}/myapp:latest
