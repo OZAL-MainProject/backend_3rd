@@ -25,8 +25,8 @@ jobs:
 
       - name: Build and Push Docker Image
         run: |
-          docker build -t ${{ secrets.DOCKERHUB_NAME }}/myapp:latest .
-          docker push ${{ secrets.DOCKERHUB_NAME }}/myapp:latest
+          docker build -t ${{ secrets.DOCKERHUB_NAME }}/app:latest .
+          docker push ${{ secrets.DOCKERHUB_NAME }}/app:latest
 
       - name: Deploy to Server via SSH
         uses: appleboy/ssh-action@v0.1.6
@@ -35,8 +35,8 @@ jobs:
           username: ${{ secrets.SERVER_USER }}
           password: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            echo "DB_HOST=database.example.com" > .env  # 환경 변수
-            docker pull ${{ secrets.DOCKERHUB_NAME }}/myapp:latest
-            docker stop myapp || true
-            docker rm myapp || true
-            docker run -d --name myapp -p 8000:8000 --env-file .env ${{ secrets.DOCKERHUB_NAME }}/myapp:latest
+#            echo "DB_HOST=database.example.com" > .env  # 환경 변수
+            docker pull ${{ secrets.DOCKERHUB_NAME }}/app:latest
+            docker stop app || true
+            docker rm app || true
+            docker run -d --name app -p 8000:8000 --env-file .env ${{ secrets.DOCKERHUB_NAME }}/app:latest
