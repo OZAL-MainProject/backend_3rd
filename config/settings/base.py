@@ -9,12 +9,14 @@ https://docs.djangoproject.com/en/5.1/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.1/ref/settings/
 """
-
+import os
 from pathlib import Path
 from dotenv import load_dotenv, dotenv_values
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
-BASE_DIR = Path(__file__).resolve().parent.parent
+BASE_DIR = Path(__file__).resolve().parent.parent.parent
+
+load_dotenv()
 
 ENV = dotenv_values(".env")
 
@@ -22,7 +24,7 @@ ENV = dotenv_values(".env")
 # See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-g(f#(w%m)%%f7ewi6*u4*j((e_)pe&twep6#1ap7d#^%=!hdrl'
+SECRET_KEY = ENV.get("DJANGO_SECRET_KEY")
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -43,6 +45,9 @@ CUSTOM_APPS = [
     'allauth.account',
     'allauth.socialaccount',
     'allauth.socialaccount.providers.kakao',
+    "rest_framework",
+    "corsheaders",
+    "rest_framework_simplejwt",
 ]
 
 
@@ -63,6 +68,7 @@ AUTHENTICATION_BACKENDS = [
 ]
 
 MIDDLEWARE = [
+    "corsheaders.middleware.CorsMiddleware",
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -97,17 +103,26 @@ WSGI_APPLICATION = 'config.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.postgresql",
-        "HOST": ENV.get("POSTGRES_HOST"),  # 기본값 제거
-        "USER": ENV.get("POSTGRES_USER"),
-        "PASSWORD": ENV.get("POSTGRES_PASSWORD"),
-        "NAME": ENV.get("POSTGRES_DBNAME"),
-        "PORT": ENV.get("POSTGRES_PORT"),
-    }
-}
 
+CORS_ALLOWED_ORIGINS = []
+
+CORS_ALLOW_CREDENTIALS = True  # 쿠키 포함 요청 허용
+
+CORS_ALLOW_METHODS = [
+    "GET",
+    "POST",
+    "DELETE",
+    "OPTIONS",
+    "PATCH",
+    "PUT",
+]
+
+
+REST_FRAMEWORK = {
+    "DEFAULT_AUTHENTICATION_CLASSES": (
+        "rest_framework_simplejwt.authentication.JWTAuthentication",
+    ),
+}
 
 
 # Password validation
@@ -134,7 +149,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'Asia/Seoul'
 
 USE_I18N = True
 
@@ -145,6 +160,7 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.1/howto/static-files/
 
 STATIC_URL = 'static/'
+STATIC_ROOT = BASE_DIR / "static"
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
@@ -152,21 +168,29 @@ STATIC_URL = 'static/'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 
-# kakao oauth
+# Kakao OAuth 설정
+KAKAO_CLIENT_ID = ENV.get("KAKAO_CLIENT_ID")
+KAKAO_REDIRECT_URI = ENV.get("KAKAO_REDIRECT_URI")
+KAKAO_SECRET = ENV.get("KAKAO_SECRET")
+
 SITE_ID = 1
 
-SOCIAL_AUTH_KAKAO = {
-    'APP': {
-        'client_id': ENV.get("KAKAO_CLIENT_ID"),
-        'secret': ENV.get("KAKAO_SECRET"),
-        'key': ENV.get("KAKAO_KEY", ""),  # 기본값을 빈 문자열로 설정
-    },
-    'SCOPE': ENV.get("KAKAO_SCOPE", "").split(","),  # 쉼표로 구분된 문자열을 리스트로 변환
-    'AUTH_PARAMS': {'prompt': ENV.get("KAKAO_AUTH_PROMPT", "login")},
-}
+# SOCIAL_AUTH_KAKAO = {
+#     'APP': {
+#         'client_id': ENV.get("KAKAO_CLIENT_ID"),
+#         'secret': ENV.get("KAKAO_SECRET"),
+#         'key': ENV.get("KAKAO_KEY", ""),  # 기본값을 빈 문자열로 설정
+#     },
+#     'SCOPE': ENV.get("KAKAO_SCOPE", "").split(","),  # 쉼표로 구분된 문자열을 리스트로 변환
+#     'AUTH_PARAMS': {'prompt': ENV.get("KAKAO_AUTH_PROMPT", "login")},
+# }
 
-SOCIALACCOUNT_ADAPTER = 'users.signals.MySocialAccountAdapter'
+# SOCIALACCOUNT_ADAPTER = 'users.signals.MySocialAccountAdapter'
 
 # 로그인 성공 후 메인페이지로 이동할 수 있도록.
 LOGIN_REDIRECT_URL = '/'
 LOGOUT_REDIRECT_URL = '/'
+
+
+NAVER_CLIENT_ID=ENV.get("NAVER_CLIENT_ID")
+NAVER_CLIENT_SECRET=ENV.get("NAVER_CLIENT_SECRET")
