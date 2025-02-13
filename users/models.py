@@ -6,7 +6,7 @@ class User(models.Model):
     nickname = models.CharField(max_length=50, null=True, blank=True)
     profile_image = models.CharField(max_length=250, null=True, blank=True)
     provider = models.CharField(max_length=50)  # "kakao" 값이 들어갈 예정
-    provider_id = models.CharField(max_length=255, unique=True)  # 카카오에서 받은 유저 ID
+    provider_id = models.CharField(max_length=255, unique=True)  # 카카오에서 유저 ID
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
