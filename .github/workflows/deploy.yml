@@ -3,7 +3,7 @@ name: Deploy
 on:
   push:
     branches:
-      - main  # main 브랜치에 push될 때 실행
+      - develop  # develop 브랜치에 push될 때 실행
 
 jobs:
   deploy:
@@ -15,24 +15,25 @@ jobs:
         uses: actions/checkout@v2
 
       - name: Login to Docker Hub
-        uses: docker/login-action@v1
+        uses: docker/login-action@v2  # 최신 버전 사용
         with:
-          username: ${{ secrets.DOCKERHUB_USER }}
+          username: ${{ secrets.DOCKERHUB_NAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Build and Push Docker Image
         run: |
-          docker build -t ${{ secrets.DOCKERHUB_USER }}/myapp:latest .
-          docker push ${{ secrets.DOCKERHUB_USER }}/myapp:latest
+          docker build -t ${{ secrets.DOCKERHUB_NAME }}/myapp:latest .
+          docker push ${{ secrets.DOCKERHUB_NAME }}/myapp:latest
 
       - name: Deploy to Server via SSH
         uses: appleboy/ssh-action@v0.1.6
         with:
-          host: ${{ secrets.SERVER_HOST }} # 원격 서버 IP 또는 도메인 github 등록 해야함
-          username: ${{ secrets.SERVER_USER }} # 원격 서버 로그인 사용자명
-          key: ${{ secrets.SSH_PRIVATE_KEY }} # 서버에 접속할 SSH 개인 키 (~/.ssh/id_rsa 내용)
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            docker pull ${{ secrets.DOCKERHUB_USER }}/myapp:latest
+            echo "DB_HOST=database.example.com" > .env  # 필요한 경우 환경 변수 생성
+            docker pull ${{ secrets.DOCKERHUB_NAME }}/myapp:latest
             docker stop myapp || true
             docker rm myapp || true
-            docker run -d --name myapp -p 8000:8000 --env-file .env ${{ secrets.DOCKERHUB_USER }}/myapp:latest
+            docker run -d --name myapp -p 8000:8000 --env-file .env ${{ secrets.DOCKERHUB_NAME }}/myapp:latest
