@@ -56,6 +56,7 @@ def kakao_login(request):
 
     # 3️⃣ DB에서 유저 조회 / 생성
     user, created = User.objects.get_or_create(
+
         provider_id=kakao_id,
         defaults={
             "email": email,

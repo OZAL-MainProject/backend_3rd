@@ -1,4 +1,17 @@
 from django.db import models
+from django.contrib.auth.models import BaseUserManager
+
+class UserManager(BaseUserManager):
+    # 일반 유저 생성
+    def create_user(self, email, password):
+        if not email:
+            raise ValueError("Please enter your email address")
+
+        user = self.model(email=email)
+        user.set_password(password)
+        user.save()
+
+        return user
 
 class User(models.Model):
     email = models.CharField(max_length=200, unique=True, null=True, blank=True)
