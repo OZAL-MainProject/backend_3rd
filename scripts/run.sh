@@ -2,7 +2,12 @@
 set -e
 
 export PYTHONPATH="/app"
-export DJANGO_SETTINGS_MODULE=config.settings.dev
+
+if [ "$DJANGO_ENV" = "production" ]; then
+    export DJANGO_SETTINGS_MODULE=config.settings.prod
+else
+    export DJANGO_SETTINGS_MODULE=config.settings.dev
+fi
 
 poetry run python manage.py collectstatic --noinput
 poetry run python manage.py migrate
