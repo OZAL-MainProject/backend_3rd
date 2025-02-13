@@ -35,7 +35,7 @@ jobs:
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            echo "DB_HOST=database.example.com" > .env  # 필요한 경우 환경 변수 생성
+            echo "DB_HOST=database.example.com" > .env  # 환경 변수 생성
             docker pull ${{ secrets.DOCKERHUB_NAME }}/myapp:latest
             docker stop myapp || true
             docker rm myapp || true
