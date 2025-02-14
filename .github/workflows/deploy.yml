@@ -3,7 +3,7 @@ name: Deploy
 on:
   push:
     branches:
-      - develop  # develop 브랜치에 push될 때 실행
+      - develop  # develop에 push될 때 실행
   pull_request:
     branches:
       - develop
