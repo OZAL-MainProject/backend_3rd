@@ -7,11 +7,11 @@ DEBUG = False
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
-        "HOST": ENV.get("POSTGRES_HOST"),  # 기본값 제거
-        "USER": ENV.get("POSTGRES_USER"),
-        "PASSWORD": ENV.get("POSTGRES_PASSWORD"),
-        "NAME": ENV.get("POSTGRES_DBNAME"),
-        "PORT": ENV.get("POSTGRES_PORT"),
+        "HOST": os.getenv("POSTGRES_HOST"),  # 기본값 제거
+        "USER": os.getenv("POSTGRES_USER"),
+        "PASSWORD": os.getenv("POSTGRES_PASSWORD"),
+        "NAME": os.getenv("POSTGRES_DBNAME"),
+        "PORT": os.getenv("POSTGRES_PORT"),
     }
 }
 

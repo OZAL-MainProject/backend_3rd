@@ -35,8 +35,7 @@ jobs:
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            echo "DB_HOST=database.example.com" > .env  # 필요한 경우 환경 변수 생성
             docker pull ${{ secrets.DOCKERHUB_NAME }}/myapp:latest
             docker stop ${{ secrets.DJANGO_CONTAINER_NAME }} || true
             docker rm ${{ secrets.DJANGO_CONTAINER_NAME }} || true
-            docker run -d --name ${{ secrets.DJANGO_CONTAINER_NAME }} -p 8000:8000 --env-file .env ${{ secrets.DOCKERHUB_NAME }}/myapp:latest
+            docker run -d --name ${{ secrets.DJANGO_CONTAINER_NAME }} -p 8000:8000 --env-file ~/backend_3rd/.env ${{ secrets.DOCKERHUB_NAME }}/myapp:latest
