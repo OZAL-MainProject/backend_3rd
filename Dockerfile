@@ -15,6 +15,8 @@ RUN \
 ENV PATH="/root/.local/bin:$PATH"
 ENV PATH="/usr/local/bin/:$PATH"
 
+RUN poetry add gunicorn
+
 RUN chmod +x scripts/run.sh && \
     chmod -R 777 /app
 

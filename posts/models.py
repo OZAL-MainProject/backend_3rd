@@ -7,7 +7,6 @@ class Post(models.Model):
     content = models.TextField()
     likes_count = models.IntegerField(default=0)
     view_count = models.IntegerField(default=0)
-    thumbnail = models.CharField(max_length=200)
     is_public = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
