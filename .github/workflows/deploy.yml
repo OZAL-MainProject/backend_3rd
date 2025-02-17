@@ -27,6 +27,8 @@ jobs:
         run: |
           docker build -t ${{ secrets.DOCKERHUB_NAME }}/myapp:latest .
           docker push ${{ secrets.DOCKERHUB_NAME }}/myapp:latest
+          docker build -t ${{ secrets.DOCKERHUB_NAME }}/myapp-nginx:latest ./nginx
+          docker push ${{ secrets.DOCKERHUB_NAME }}/myapp-nginx:latest
 
       - name: Deploy to Server via SSH
         uses: appleboy/ssh-action@v0.1.6
@@ -35,7 +37,13 @@ jobs:
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
+            docker network create myapp_network
+            docker volume create static-volume
             docker pull ${{ secrets.DOCKERHUB_NAME }}/myapp:latest
             docker stop ${{ secrets.DJANGO_CONTAINER_NAME }} || true
             docker rm ${{ secrets.DJANGO_CONTAINER_NAME }} || true
-            docker run -d --name ${{ secrets.DJANGO_CONTAINER_NAME }} -p 8000:8000 --env-file ~/backend_3rd/.env ${{ secrets.DOCKERHUB_NAME }}/myapp:latest
+            docker run -d --network myapp_network --name ${{ secrets.DJANGO_CONTAINER_NAME }} -p 8000:8000 -v static-volume:/app/static --env-file ~/backend_3rd/.env ${{ secrets.DOCKERHUB_NAME }}/myapp:latest
+            docker pull ${{ secrets.DOCKERHUB_NAME }}/myapp-nginx:latest
+            docker stop ${{ secrets.NGINX_CONTAINER_NAME }} || true
+            docker rm ${{ secrets.NGINX_CONTAINER_NAME }} || true
+            docker run -d --network myapp_network --name ${{ secrets.NGINX_CONTAINER_NAME }} -p 80:80 -v static-volume:/app/static ${{ secrets.DOCKERHUB_NAME }}/myapp-nginx:latest

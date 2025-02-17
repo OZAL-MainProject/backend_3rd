@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 import os
 from pathlib import Path
 from dotenv import load_dotenv, dotenv_values
+from datetime import timedelta
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
@@ -27,7 +28,6 @@ ENV = dotenv_values(".env")
 SECRET_KEY = os.getenv("DJANGO_SECRET_KEY")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
 
 ALLOWED_HOSTS = []
 
@@ -143,6 +143,9 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
+AUTH_USER_MODEL = 'users.User'  # 올바른 사용자 모델 경로 설정
+
+
 
 # Internationalization
 # https://docs.djangoproject.com/en/5.1/topics/i18n/
@@ -169,22 +172,22 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 
 # Kakao OAuth 설정
-KAKAO_CLIENT_ID = ENV.get("KAKAO_CLIENT_ID")
-KAKAO_REDIRECT_URI = ENV.get("KAKAO_REDIRECT_URI")
-KAKAO_SECRET = ENV.get("KAKAO_SECRET")
+KAKAO_CLIENT_ID = os.getenv("KAKAO_CLIENT_ID")
+KAKAO_REDIRECT_URI = os.getenv("KAKAO_REDIRECT_URI")
+KAKAO_SECRET = os.getenv("KAKAO_SECRET")
 
 SITE_ID = 1
 
 # SOCIAL_AUTH_KAKAO = {
 #     'APP': {
-#         'client_id': ENV.get("KAKAO_CLIENT_ID"),
-#         'secret': ENV.get("KAKAO_SECRET"),
-#         'key': ENV.get("KAKAO_KEY", ""),  # 기본값을 빈 문자열로 설정
+#         'client_id': os.getenv("KAKAO_CLIENT_ID"),
+#         'secret': os.getenv("KAKAO_SECRET"),
+#         'key': os.getenv("KAKAO_KEY", ""),  # 기본값을 빈 문자열로 설정
 #     },
-#     'SCOPE': ENV.get("KAKAO_SCOPE", "").split(","),  # 쉼표로 구분된 문자열을 리스트로 변환
-#     'AUTH_PARAMS': {'prompt': ENV.get("KAKAO_AUTH_PROMPT", "login")},
+#     'SCOPE': os.getenv("KAKAO_SCOPE", "").split(","),  # 쉼표로 구분된 문자열을 리스트로 변환
+#     'AUTH_PARAMS': {'prompt': os.getenv("KAKAO_AUTH_PROMPT", "login")},
 # }
-
+#
 # SOCIALACCOUNT_ADAPTER = 'users.signals.MySocialAccountAdapter'
 
 # 로그인 성공 후 메인페이지로 이동할 수 있도록.
@@ -192,5 +195,18 @@ LOGIN_REDIRECT_URL = '/'
 LOGOUT_REDIRECT_URL = '/'
 
 
-NAVER_CLIENT_ID=ENV.get("NAVER_CLIENT_ID")
-NAVER_CLIENT_SECRET=ENV.get("NAVER_CLIENT_SECRET")
+NAVER_CLIENT_ID=os.getenv("NAVER_CLIENT_ID")
+NAVER_CLIENT_SECRET=os.getenv("NAVER_CLIENT_SECRET")
+
+
+SIMPLE_JWT = {
+    "ACCESS_TOKEN_LIFETIME": timedelta(days=1),  # 액세스 토큰 만료 시간 (기본 1일)
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=7),  # 리프레시 토큰 만료 시간 (기본 7일)
+    "ROTATE_REFRESH_TOKENS": True,
+    "BLACKLIST_AFTER_ROTATION": True,
+    "ALGORITHM": "HS256",
+#    "SIGNING_KEY": settings.SECRET_KEY,  # 서명 키 설정
+    "AUTH_HEADER_TYPES": ("Bearer",),
+    "USER_ID_FIELD": "id",
+    "USER_ID_CLAIM": "user_id",
+}
