@@ -3,7 +3,6 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    restart: always
     container_name: ozal-server
     env_file:
       - .env

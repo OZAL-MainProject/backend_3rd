@@ -15,7 +15,6 @@ DATABASES = {
     }
 }
 
-# 나중에 변경
 CORS_ALLOWED_ORIGINS += [
     "http://3.34.96.155",
     "http://localhost:5173",  # 프론트엔드 주소

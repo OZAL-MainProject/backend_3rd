@@ -1,25 +1,23 @@
-FROM python:3.13-alpine3.21
+FROM python:3.13
 
 ENV PYTHONUNBUFFERED=1
 
 WORKDIR /app
 
-COPY . .
-
-RUN apk update && apk add --no-cache postgresql-client bash
-
-RUN apk add --no-cache curl
+RUN apt-get update && apt-get install -y \
+build-essential \
+libpq-dev \
+&& rm -rf /var/lib/apt/lists/*
 
 RUN curl -sSL https://install.python-poetry.org | python3 -
 
 ENV PATH="/root/.local/bin:$PATH"
-ENV PATH="/usr/local/bin/:$PATH"
 
-RUN chmod +x scripts/run.sh && \
-    chmod -R 777 /app
+COPY . /app
+COPY pyproject.toml /app/pyproject.toml
+COPY poetry.lock /app/poetry.lock
+
 
 RUN poetry install --no-root
 
-CMD ["bash", "./scripts/run.sh"]
-
-EXPOSE 8000
+ENTRYPOINT ["bash", "/app/scripts/run.sh"]
