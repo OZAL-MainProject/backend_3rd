@@ -79,3 +79,22 @@ class KakaoLoginView(APIView):
             "tokens": tokens,
             "user": UserSerializer(user).data,
         }, status=status.HTTP_200_OK)
+
+
+
+class RefreshTokenView(APIView):
+    """리프레시 토큰을 이용해 새로운 액세스 토큰 발급"""
+
+    def post(self, request):
+        refresh_token = request.data.get("refresh")
+        if not refresh_token:
+            return Response({"error": "리프레시 토큰이 없습니다."}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            refresh = RefreshToken(refresh_token)
+            access_token = str(refresh.access_token)
+            return Response({"access": access_token}, status=status.HTTP_200_OK)
+
+        except TokenError:
+            return Response({"error": "리프레시 토큰이 유효하지 않거나 만료되었습니다. 다시 로그인하세요."},
+                            status=status.HTTP_401_UNAUTHORIZED)

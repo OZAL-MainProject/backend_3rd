@@ -16,6 +16,9 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
+
+from users.views import RefreshTokenView
+
 # config url은 뒤에 슬래쉬 붙이고 나머지 url은 앞에 슬래쉬 붙이지마
 
 urlpatterns = [
@@ -23,4 +26,5 @@ urlpatterns = [
     # 이 아랫 부분은 우리가 사용하는 app들의 URL들을 넣습니다.
     path('ozal/', include('users.urls')),
     path('ozal/trippost/', include('posts.urls')),
+    path("api/token/refresh/", RefreshTokenView.as_view(), name="token_refresh"),
 ]
