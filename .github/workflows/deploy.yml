@@ -27,6 +27,8 @@ jobs:
         run: |
           docker build -t ${{ secrets.DOCKERHUB_NAME }}/myapp:latest .
           docker push ${{ secrets.DOCKERHUB_NAME }}/myapp:latest
+          docker build -t ${{ secrets.DOCKERHUB_NAME }}/myapp-nginx:latest ./nginx
+          docker push ${{ secrets.DOCKERHUB_NAME }}/myapp-nginx:latest
 
       - name: Deploy to Server via SSH
         uses: appleboy/ssh-action@v0.1.6
@@ -39,3 +41,7 @@ jobs:
             docker stop ${{ secrets.DJANGO_CONTAINER_NAME }} || true
             docker rm ${{ secrets.DJANGO_CONTAINER_NAME }} || true
             docker run -d --name ${{ secrets.DJANGO_CONTAINER_NAME }} -p 8000:8000 --env-file ~/backend_3rd/.env ${{ secrets.DOCKERHUB_NAME }}/myapp:latest
+            docker pull ${{ secrets.DOCKERHUB_NAME }}/myapp-nginx:latest
+            docker stop ${{ secrets.NGINX_CONTAINER_NAME }} || true
+            docker rm ${{ secrets.NGINX_CONTAINER_NAME }} || true
+            docker run -d --name ${{ secrets.NGINX_CONTAINER_NAME }} -p 80:80 ${{ secrets.DOCKERHUB_NAME }}/myapp-nginx:latest
