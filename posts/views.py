@@ -4,9 +4,8 @@ from rest_framework import generics, status, permissions
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from django.shortcuts import get_object_or_404
-from django.db.models import Q
+from django.db.models import Q, F
 from rest_framework.exceptions import PermissionDenied
-
 from .models import Post
 from .serializers import (
     PostCreateSerializer,
@@ -33,8 +32,13 @@ class TripPostDetailView(generics.RetrieveAPIView):
         """is_public이 False면 작성자만 볼 수 있도록 제한 + view_count 증가"""
         post = super().get_object()
 
+        # 비공개 게시물은 작성자만 조회 가능
         if not post.is_public and post.user != self.request.user:
             raise PermissionDenied("비공개 게시물입니다.")
+
+        # 조회수 증가 후 즉시 저장 (save() 사용)
+        post.view_count += 1
+        post.save()
 
         return post
 
@@ -66,7 +70,7 @@ class TripPostDeleteView(generics.DestroyAPIView):
         return post
 
 
-# 전체 게시글 조회 - likes counts 볼 수 있게
+# 전체 게시글 조회
 class TripPostListView(generics.ListAPIView):
     """게시글 목록 조회 및 검색 API"""
     serializer_class = PostListSerializer

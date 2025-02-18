@@ -38,14 +38,15 @@ class PostCreateSerializer(serializers.ModelSerializer):
 
         return post
 
+
 class PostDetailSerializer(serializers.ModelSerializer):
     """게시글 상세 조회 Serializer"""
     user = serializers.StringRelatedField()
-    like_count = serializers.IntegerField(source="likes_count", read_only=True)  # 수정
+    like_count = serializers.IntegerField(source="likes_count", read_only=True)
 
     class Meta:
         model = Post
-        fields = ("id", "title", "content", "user", "created_at", "updated_at", "like_count")
+        fields = ("id", "title", "content", "user", "created_at", "updated_at", "like_count", "view_count")
 
 
 class PostModifySerializer(serializers.ModelSerializer):
@@ -80,6 +81,7 @@ class PostModifySerializer(serializers.ModelSerializer):
 
         return instance
 
+
 class PostListSerializer(serializers.ModelSerializer):
     """게시글 목록 Serializer (좋아요 수 포함)"""
     first_image_url = serializers.SerializerMethodField()
@@ -94,7 +96,6 @@ class PostListSerializer(serializers.ModelSerializer):
         """content에서 첫 번째 S3 URL을 추출"""
         urls = re.findall(r"https?://[^\s]+", obj.content)
         return urls[0] if urls else None
-
 
 
 class MyPostListSerializer(serializers.ModelSerializer):
