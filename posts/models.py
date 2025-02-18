@@ -1,13 +1,14 @@
 from django.db import models
+
+from config.settings import base
 from users.models import User
 
 class Post(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='post')
+    user = models.ForeignKey(base.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='post')
     title = models.CharField(max_length=150)
     content = models.TextField()
-    likes_count = models.IntegerField(default=0)
-    view_count = models.IntegerField(default=0)
-    thumbnail = models.CharField(max_length=200)
+    likes_count = models.PositiveIntegerField(default=0)
+    view_count = models.PositiveIntegerField(default=0)
     is_public = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
