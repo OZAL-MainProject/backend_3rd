@@ -1,11 +1,13 @@
 import requests
 from django.conf import settings
 from rest_framework.response import Response
-from rest_framework import status
+from rest_framework import status, generics, permissions
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken, TokenError
 from .models import User
 from .serializers import UserSerializer, RefreshTokenSerializer
+from django.shortcuts import get_object_or_404
+from .serializers import UserNicknameUpdateSerializer, UserProfileImageUpdateSerializer
 
 
 class KakaoLoginView(APIView):
@@ -90,4 +92,34 @@ class RefreshTokenView(APIView):
             refresh = serializer.validated_data["refresh"]
             return Response({"access": str(refresh.access_token)}, status=status.HTTP_200_OK)
 
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)\
+
+
+
+class IsOwner(permissions.BasePermission):
+    """본인만 프로필을 수정할 수 있도록 하는 권한"""
+
+    def has_object_permission(self, request, view, obj):
+        return obj == request.user
+
+
+class UpdateNicknameView(generics.UpdateAPIView):
+    """닉네임 수정 뷰"""
+
+    queryset = User.objects.all()
+    serializer_class = UserNicknameUpdateSerializer
+    permission_classes = [permissions.IsAuthenticated, IsOwner]
+
+    def get_object(self):
+        return self.request.user
+
+
+class UpdateProfileImageView(generics.UpdateAPIView):
+    """프로필 이미지 수정 뷰"""
+
+    queryset = User.objects.all()
+    serializer_class = UserProfileImageUpdateSerializer
+    permission_classes = [permissions.IsAuthenticated, IsOwner]
+
+    def get_object(self):
+        return self.request.user
