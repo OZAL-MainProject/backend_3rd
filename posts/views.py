@@ -16,22 +16,21 @@ from .serializers import (
     MyPostListSerializer  # 내 게시글 목록 Serializer 추가
 )
 
-
-
 class TripPostCreateView(generics.CreateAPIView):
     """게시글 생성 API"""
     queryset = Post.objects.all()
     serializer_class = PostCreateSerializer
     permission_classes = [permissions.IsAuthenticated]
-class TripPostDetailView(generics.RetrieveAPIView):
-    """게시글 상세 조회 API"""
 
+
+class TripPostDetailView(generics.RetrieveAPIView):
+    """게시글 상세 조회 API (조회 시 view_count 증가)"""
     queryset = Post.objects.all()
     serializer_class = PostDetailSerializer
     lookup_url_kwarg = "post_id"
 
     def get_object(self):
-        """is_public이 False면 작성자만 볼 수 있도록 제한"""
+        """is_public이 False면 작성자만 볼 수 있도록 제한 + view_count 증가"""
         post = super().get_object()
 
         if not post.is_public and post.user != self.request.user:
@@ -50,11 +49,9 @@ class TripPostUpdateView(generics.UpdateAPIView):
         """게시글 작성자만 수정 가능"""
         post = get_object_or_404(Post, id=self.kwargs["post_id"])
         if post.user != self.request.user:
-            return Response(
-                {"error": "게시글 작성자만 수정할 수 있습니다."},
-                status=status.HTTP_403_FORBIDDEN,
-            )
+            raise PermissionDenied("게시글 작성자만 수정할 수 있습니다.")  # 수정
         return post
+
 
 class TripPostDeleteView(generics.DestroyAPIView):
     """게시글 삭제 API (작성자만 가능)"""
@@ -62,18 +59,18 @@ class TripPostDeleteView(generics.DestroyAPIView):
     permission_classes = [IsAuthenticated]
 
     def get_object(self):
+        """게시글 작성자만 삭제 가능"""
         post = get_object_or_404(Post, id=self.kwargs["post_id"])
         if post.user != self.request.user:
-            return Response(
-                {"error": "게시글 작성자만 삭제할 수 있습니다."},
-                status=status.HTTP_403_FORBIDDEN,
-            )
+            raise PermissionDenied("게시글 작성자만 삭제할 수 있습니다.")  # 수정
         return post
 
 
+# 전체 게시글 조회 - likes counts 볼 수 있게
 class TripPostListView(generics.ListAPIView):
     """게시글 목록 조회 및 검색 API"""
     serializer_class = PostListSerializer
+    permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
         query = self.request.query_params.get("q", "").strip()
@@ -83,9 +80,6 @@ class TripPostListView(generics.ListAPIView):
             Q(title__icontains=query) | Q(content__icontains=query),
             is_public=True,
         )
-
-        if user_id:
-            base_queryset = base_queryset.filter(user__id=user_id)
 
         return base_queryset.order_by("-created_at")
 
