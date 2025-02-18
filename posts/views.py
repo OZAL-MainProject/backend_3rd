@@ -1,4 +1,6 @@
-from rest_framework import generics, status
+from locations.models import Location
+from post_locations.models import PostLocation
+from rest_framework import generics, status, permissions
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from django.shortcuts import get_object_or_404
@@ -15,15 +17,12 @@ from .serializers import (
 )
 
 
+
 class TripPostCreateView(generics.CreateAPIView):
+    """게시글 생성 API"""
     queryset = Post.objects.all()
     serializer_class = PostCreateSerializer
-    permission_classes = [IsAuthenticated]
-
-    def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
-
-
+    permission_classes = [permissions.IsAuthenticated]
 class TripPostDetailView(generics.RetrieveAPIView):
     """게시글 상세 조회 API"""
 
@@ -48,6 +47,7 @@ class TripPostUpdateView(generics.UpdateAPIView):
     permission_classes = [IsAuthenticated]
 
     def get_object(self):
+        """게시글 작성자만 수정 가능"""
         post = get_object_or_404(Post, id=self.kwargs["post_id"])
         if post.user != self.request.user:
             return Response(
@@ -55,7 +55,6 @@ class TripPostUpdateView(generics.UpdateAPIView):
                 status=status.HTTP_403_FORBIDDEN,
             )
         return post
-
 
 class TripPostDeleteView(generics.DestroyAPIView):
     """게시글 삭제 API (작성자만 가능)"""
@@ -92,25 +91,29 @@ class TripPostListView(generics.ListAPIView):
 
 
 class UserPostListView(generics.ListAPIView):
-    """특정 사용자의 게시글 목록 조회 API (인증 여부에 따라 다르게 응답)"""
+    """특정 사용자의 게시글 목록 조회 API (비로그인 사용자는 접근 불가)"""
     serializer_class = MyPostListSerializer
+    permission_classes = [permissions.IsAuthenticated]  # 로그인 필수
 
     def get_queryset(self):
-        """로그인한 유저는 자신의 전체 게시글을, 비로그인 유저는 공개된 게시글만 조회"""
+        """로그인한 유저만 접근 가능하며, 본인의 게시글은 전체 조회 가능 / 다른 유저의 게시글은 공개된 게시글만 조회"""
         user_id = self.kwargs.get("user_id")
 
-        if self.request.user.is_authenticated and self.request.user.id == int(user_id):
-            # 로그인한 유저가 자신의 게시글을 조회하는 경우 → 모든 게시글 반환
+        if self.request.user.id == int(user_id):
+            # 본인의 게시글은 모두 조회 가능
             return Post.objects.filter(user_id=user_id).order_by("-created_at")
         else:
-            # 로그인하지 않았거나 다른 사람의 게시글을 조회하는 경우 → 공개 게시글만 반환
+            # 다른 사용자의 게시글은 공개된 게시글만 조회 가능
             return Post.objects.filter(user_id=user_id, is_public=True).order_by("-created_at")
 
     def list(self, request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            return Response({"detail": "로그인이 필요합니다."}, status=status.HTTP_401_UNAUTHORIZED)
+
         queryset = self.get_queryset()
         serializer = self.get_serializer(queryset, many=True)
 
-        # 방문한 장소 목록 추가 (게시글이 비어있지 않은 경우만 추가)
+        # 방문한 장소 목록 추가
         visited_locations = set()
         for post in queryset:
             for location in post.post_location.all():
@@ -123,5 +126,5 @@ class UserPostListView(generics.ListAPIView):
 
         return Response({
             "posts": serializer.data,
-            "visited_locations": list(visited_locations)  # 중복 방지
+            "visited_locations": list(visited_locations)
         }, status=status.HTTP_200_OK)

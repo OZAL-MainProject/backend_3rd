@@ -1,6 +1,38 @@
 import random
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework import generics, status
+from .models import Location
+from .serializers import LocationSerializer
+
+
+
+class LocationCreateView(generics.ListCreateAPIView):
+    """장소 추가 및 조회 API"""
+    queryset = Location.objects.all()
+    serializer_class = LocationSerializer
+
+    def create(self, request, *args, **kwargs):
+        """새로운 장소 추가 (중복 체크)"""
+        detail_address = request.data.get("detail_address")
+        address = request.data.get("address")
+        latitude = request.data.get("latitude")
+        longitude = request.data.get("longitude")
+
+        location, created = Location.objects.get_or_create(
+            detail_address=detail_address,
+            address=address,
+            defaults={"latitude": latitude, "longitude": longitude}
+        )
+
+        if created:
+            return Response(LocationSerializer(location).data, status=status.HTTP_201_CREATED)
+        else:
+            return Response(
+                {"message": "이미 존재하는 장소입니다.", "location": LocationSerializer(location).data},
+                status=status.HTTP_200_OK
+            )
+
 
 
 class RandomTravelRecommendation(APIView):
