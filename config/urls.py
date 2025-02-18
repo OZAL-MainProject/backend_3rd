@@ -26,7 +26,9 @@ urlpatterns = [
     # 이 아랫 부분은 우리가 사용하는 app들의 URL들을 넣습니다.
     path('ozal/', include('users.urls')),
     path('ozal/trippost/', include('posts.urls')),
+    path("ozal/trippost/", include('likes.urls')),
     path("api/token/refresh/", RefreshTokenView.as_view(), name="token_refresh"),
     path("ozal/travel/", include('locations.urls')),
-    path("ozal/users/", include('follows.urls'))
+    path("ozal/users/", include('follows.urls')),
+
 ]
