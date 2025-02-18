@@ -27,4 +27,6 @@ urlpatterns = [
     path('ozal/', include('users.urls')),
     path('ozal/trippost/', include('posts.urls')),
     path("api/token/refresh/", RefreshTokenView.as_view(), name="token_refresh"),
+    path("ozal/travel/", include('locations.urls')),
+    path("ozal/users/", include('follows.urls'))
 ]
