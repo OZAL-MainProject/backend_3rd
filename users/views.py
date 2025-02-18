@@ -3,9 +3,9 @@ from django.conf import settings
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.views import APIView
-from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework_simplejwt.tokens import RefreshToken, TokenError
 from .models import User
-from .serializers import UserSerializer
+from .serializers import UserSerializer, RefreshTokenSerializer
 
 
 class KakaoLoginView(APIView):
@@ -81,20 +81,13 @@ class KakaoLoginView(APIView):
         }, status=status.HTTP_200_OK)
 
 
-
 class RefreshTokenView(APIView):
     """리프레시 토큰을 이용해 새로운 액세스 토큰 발급"""
 
     def post(self, request):
-        refresh_token = request.data.get("refresh")
-        if not refresh_token:
-            return Response({"error": "리프레시 토큰이 없습니다."}, status=status.HTTP_400_BAD_REQUEST)
+        serializer = RefreshTokenSerializer(data=request.data)
+        if serializer.is_valid():
+            refresh = serializer.validated_data["refresh"]
+            return Response({"access": str(refresh.access_token)}, status=status.HTTP_200_OK)
 
-        try:
-            refresh = RefreshToken(refresh_token)
-            access_token = str(refresh.access_token)
-            return Response({"access": access_token}, status=status.HTTP_200_OK)
-
-        except TokenError:
-            return Response({"error": "리프레시 토큰이 유효하지 않거나 만료되었습니다. 다시 로그인하세요."},
-                            status=status.HTTP_401_UNAUTHORIZED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
