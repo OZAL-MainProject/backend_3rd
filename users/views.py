@@ -133,6 +133,29 @@ class UserProfileView(generics.RetrieveAPIView):
         })
 
 
+class MyPageView(generics.RetrieveAPIView):
+    """로그인한 사용자의 마이페이지 조회 API"""
+
+    queryset = User.objects.all()
+    serializer_class = UserSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_object(self):
+        """현재 로그인한 사용자의 정보를 반환"""
+        return self.request.user
+
+    def retrieve(self, request, *args, **kwargs):
+        """Presigned URL을 포함한 마이페이지 정보 반환"""
+        user = self.get_object()
+        profile_image_url = generate_presigned_url(user.profile_image) if user.profile_image else None
+
+        serializer = self.get_serializer(user)
+        return Response({
+            **serializer.data,
+            "profile_image_url": profile_image_url,  # Presigned URL 추가
+        })
+
+
 class UpdateProfileImageView(generics.UpdateAPIView):
     """프로필 이미지 수정 API (S3 업로드 + Presigned URL 반환)"""
 
