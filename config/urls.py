@@ -2,7 +2,6 @@ from django.contrib import admin
 from django.urls import path, include
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView, SpectacularRedocView
 
-from users.views import RefreshTokenView
 
 urlpatterns = [
     path("admin/", admin.site.urls),
@@ -16,7 +15,6 @@ urlpatterns = [
     path("ozal/", include("users.urls")),
     path("ozal/trippost/", include("posts.urls")),
     path("ozal/trippost/", include("likes.urls")),
-    path("api/token/refresh/", RefreshTokenView.as_view(), name="token_refresh"),
     path("ozal/travel/", include("locations.urls")),
     path("ozal/users/", include("follows.urls")),
 ]
