@@ -162,7 +162,7 @@ class MyPageView(generics.RetrieveAPIView):
 
 
 class UpdateProfileImageView(generics.UpdateAPIView):
-    """프로필 이미지 수정 API (S3 업로드 + Presigned URL 반환)"""
+    """프로필 이미지 수정 API (S3 업로드 후 정적 URL 반환)"""
 
     queryset = User.objects.all()
     serializer_class = UserProfileImageUpdateSerializer
@@ -179,14 +179,12 @@ class UpdateProfileImageView(generics.UpdateAPIView):
 
             # S3에 새 이미지 업로드
             if "profile_image" in request.FILES:
-                user.profile_image = upload_to_s3(request.FILES["profile_image"], "profiles")
+                s3_key = upload_to_s3(request.FILES["profile_image"], "profiles")  # S3 키만 반환
+                user.profile_image = f"https://{settings.AWS_STORAGE_BUCKET_NAME}.s3.{settings.AWS_S3_REGION_NAME}.amazonaws.com/{s3_key}"
                 user.save()
 
-            # Presigned URL 생성
-            profile_image_url = generate_presigned_url(user.profile_image) if user.profile_image else None
-
             return Response({
-                "profile_image_url": profile_image_url
+                "profile_image_url": user.profile_image  # ✅ Presigned URL 대신 S3 정적 URL 반환
             }, status=status.HTTP_200_OK)
         except Exception as e:
             print(f"🔥 프로필 이미지 업데이트 오류: {str(e)}")  # ✅ 에러 로깅 추가
