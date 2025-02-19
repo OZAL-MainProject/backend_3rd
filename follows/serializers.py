@@ -15,7 +15,7 @@ class UnfollowSerializer(serializers.Serializer):
     detail = serializers.CharField()
 
 
-class UserSerializer(serializers.ModelSerializer):
+class FollowUserSerializer(serializers.ModelSerializer):
     # 사용자 정보를 직렬화하는 Serializer
     follower_count = serializers.SerializerMethodField()
     following_count = serializers.SerializerMethodField()
