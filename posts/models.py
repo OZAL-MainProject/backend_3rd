@@ -7,6 +7,7 @@ class Post(models.Model):
     user = models.ForeignKey(base.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='post')
     title = models.CharField(max_length=150)
     content = models.TextField()
+    thumbnail = models.URLField(max_length=500, blank=True, null=True)
     likes_count = models.PositiveIntegerField(default=0)
     view_count = models.PositiveIntegerField(default=0)
     is_public = models.BooleanField(default=True)

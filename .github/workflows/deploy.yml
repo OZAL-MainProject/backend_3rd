@@ -37,7 +37,6 @@ jobs:
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            docker network create myapp_network
             docker volume create static-volume
             docker pull ${{ secrets.DOCKERHUB_NAME }}/myapp:latest
             docker stop ${{ secrets.DJANGO_CONTAINER_NAME }} || true
