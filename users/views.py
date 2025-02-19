@@ -14,6 +14,7 @@ from .serializers import UserNicknameUpdateSerializer, UserProfileImageUpdateSer
 
 class KakaoLoginView(APIView):
     """카카오 로그인 API"""
+    serializer_class = UserSerializer
 
     def post(self, request):
         code = request.data.get("code")
@@ -87,6 +88,7 @@ class KakaoLoginView(APIView):
 
 class RefreshTokenView(APIView):
     """리프레시 토큰을 이용해 새로운 액세스 토큰 발급"""
+    serializer_class = RefreshTokenSerializer
 
     def post(self, request):
         serializer = RefreshTokenSerializer(data=request.data)
@@ -124,7 +126,10 @@ class UserProfileView(generics.RetrieveAPIView):
 
     def retrieve(self, request, *args, **kwargs):
         user = self.get_object()
-        profile_image_url = generate_presigned_url(user.profile_image) if user.profile_image else None
+        profile_image_url = None
+
+        if user.profile_image:
+            profile_image_url = generate_presigned_url(user.profile_image)  # ✅ None 방지
 
         serializer = self.get_serializer(user)
         return Response({
@@ -169,24 +174,28 @@ class UpdateProfileImageView(generics.UpdateAPIView):
         return self.request.user
 
     def update(self, request, *args, **kwargs):
-        user = self.get_object()
+        try:
+            user = self.get_object()
 
-        # S3에 새 이미지 업로드
-        if "profile_image" in request.FILES:
-            user.profile_image = upload_to_s3(request.FILES["profile_image"], "profiles")
-            user.save()
+            # S3에 새 이미지 업로드
+            if "profile_image" in request.FILES:
+                user.profile_image = upload_to_s3(request.FILES["profile_image"], "profiles")
+                user.save()
 
-        # Presigned URL 생성 (업데이트된 이미지에 대해)
-        profile_image_url = generate_presigned_url(user.profile_image) if user.profile_image else None
+            # Presigned URL 생성
+            profile_image_url = generate_presigned_url(user.profile_image) if user.profile_image else None
 
-        return Response({
-            "profile_image_url": profile_image_url
-        }, status=status.HTTP_200_OK)
+            return Response({
+                "profile_image_url": profile_image_url
+            }, status=status.HTTP_200_OK)
+        except Exception as e:
+            print(f"🔥 프로필 이미지 업데이트 오류: {str(e)}")  # ✅ 에러 로깅 추가
+            return Response({"error": "서버 내부 오류 발생", "details": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 class LogoutView(APIView):
     """로그아웃 API - 리프레시 토큰 무효화"""
-
+    serializer_class = RefreshTokenSerializer
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request):

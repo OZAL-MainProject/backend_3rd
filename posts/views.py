@@ -94,6 +94,9 @@ class TripPostDeleteView(generics.DestroyAPIView):
     queryset = Post.objects.all()
     permission_classes = [IsAuthenticated]
 
+    def get_serializer_class(self):
+        return None
+
     def get_object(self):
         """게시글 작성자만 삭제 가능"""
         post = get_object_or_404(Post, id=self.kwargs["post_id"])
