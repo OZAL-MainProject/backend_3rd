@@ -8,23 +8,26 @@ from .models import Post
 
 
 class PostCreateSerializer(serializers.ModelSerializer):
-    """게시글 작성 Serializer (장소 포함)"""
+    """게시글 작성 Serializer (장소 포함 + 썸네일 추가)"""
     locations = serializers.ListField(child=serializers.DictField(), required=False)
+    thumbnail = serializers.CharField(required=False, allow_blank=True)  # ✅ 썸네일 필드 추가
 
     class Meta:
         model = Post
-        fields = ("title", "content", "is_public", "locations")
+        fields = ("title", "content", "is_public", "locations", "thumbnail")
 
     def create(self, validated_data):
         """게시글 생성 시 장소 정보도 함께 저장"""
         locations_data = validated_data.pop("locations", [])
+        validated_data.pop("user", None)  # ✅ user 중복 방지 추가
         user = self.context["request"].user
 
         if not user.is_authenticated:
             raise serializers.ValidationError({"error": "로그인이 필요합니다."})
 
-        post = Post.objects.create(user=user, **validated_data)
+        post = Post.objects.create(user=user, **validated_data)  # ✅ 이제 user 중복 문제 없음
 
+        # 장소 정보 저장
         for seq, location_data in enumerate(locations_data, start=1):
             location, created = Location.objects.get_or_create(
                 detail_address=location_data["detail_address"],
@@ -37,6 +40,7 @@ class PostCreateSerializer(serializers.ModelSerializer):
             PostLocation.objects.create(post=post, location=location, sequence=seq)
 
         return post
+
 
 
 class PostDetailSerializer(serializers.ModelSerializer):

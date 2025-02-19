@@ -35,8 +35,8 @@ def upload_to_s3(file, folder_name):
     return file_name  # 파일명 반환 (Presigned URL이 아님)
 
 
-def generate_presigned_url(file_name, expiration=3600):
-    """S3의 비공개 이미지에 대한 Presigned URL 발급"""
+def generate_presigned_url(s3_key, expiration=3600):
+    """S3 Presigned URL 생성"""
     s3_client = boto3.client(
         "s3",
         region_name=settings.AWS_S3_REGION_NAME,
@@ -47,11 +47,11 @@ def generate_presigned_url(file_name, expiration=3600):
             "get_object",
             Params={
                 "Bucket": settings.AWS_STORAGE_BUCKET_NAME,
-                "Key": file_name,
+                "Key": s3_key,
             },
-            ExpiresIn=expiration,  # URL 유효시간 (초)
+            ExpiresIn=expiration,  # URL 유효시간 (기본 1시간)
         )
         return presigned_url
     except Exception as e:
-        print(f"Presigned URL 생성 오류: {e}")
+        print(f"🔥 Presigned URL 생성 오류: {e}")
         return None
