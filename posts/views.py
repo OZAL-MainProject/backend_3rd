@@ -14,6 +14,8 @@ from .serializers import (
     PostListSerializer,
     MyPostListSerializer  # 내 게시글 목록 Serializer 추가
 )
+import json
+
 
 class TripPostCreateView(generics.CreateAPIView):
     """게시글 생성 API (map_image, post_image 업로드 포함)"""
@@ -24,40 +26,66 @@ class TripPostCreateView(generics.CreateAPIView):
 
     def create(self, request, *args, **kwargs):
         post_data = request.data.copy()
+        user = request.user
 
-        # 지도 이미지 업로드
-        if "map_image" in request.FILES:
-            post_data["map_image"] = upload_to_s3(request.FILES["map_image"], "maps")
+        # 이미지 URL 저장을 위한 딕셔너리
+        image_urls = {}
 
-        # 게시글 이미지 업로드
-        if "post_image" in request.FILES:
-            post_data["post_image"] = upload_to_s3(request.FILES["post_image"], "posts")
+        try:
+            # 지도 이미지 업로드
+            if "map_image" in request.FILES:
+                map_image_url = upload_to_s3(request.FILES["map_image"], "maps")
+                image_urls["maps"] = map_image_url  # ✅ maps 구분 추가
+                post_data["map_image"] = map_image_url
 
-        serializer = self.get_serializer(data=post_data)
-        serializer.is_valid(raise_exception=True)
-        self.perform_create(serializer)
+            # 게시글 이미지 업로드
+            if "post_image" in request.FILES:
+                post_image_url = upload_to_s3(request.FILES["post_image"], "posts")
+                image_urls["posts"] = post_image_url  # ✅ posts 구분 추가
+                post_data["post_image"] = post_image_url
 
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
+            # 게시글 content에 JSON 형식으로 이미지 URL 저장
+            post_data["content"] = json.dumps(image_urls)
+
+            # 썸네일 선택 로직 추가
+            thumbnail_url = request.data.get("thumbnail")
+            if thumbnail_url not in image_urls.values():
+                thumbnail_url = image_urls.get("posts", None)  # 기본값: 게시글 이미지
+
+            post_data["thumbnail"] = thumbnail_url
+
+            # 게시글 생성
+            serializer = self.get_serializer(data=post_data)
+            serializer.is_valid(raise_exception=True)
+            post = serializer.save(user=user)  # 게시글 저장
+
+            # 응답에 업로드된 이미지 URL 포함
+            response_data = serializer.data
+            response_data["map_image_url"] = image_urls.get("maps")
+            response_data["post_image_url"] = image_urls.get("posts")
+            response_data["thumbnail_url"] = thumbnail_url
+
+            return Response(response_data, status=status.HTTP_201_CREATED)
+
+        except Exception as e:
+            print(f"🔥 게시글 생성 오류: {str(e)}")  # ✅ 에러 로깅 추가
+            return Response({"error": "서버 내부 오류 발생", "details": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 class TripPostDetailView(generics.RetrieveAPIView):
-    """게시글 상세 조회 API (조회 시 view_count 증가)"""
+    """게시글 상세 조회 API (조회 시 Presigned URL 포함)"""
     queryset = Post.objects.all()
     serializer_class = PostDetailSerializer
     lookup_url_kwarg = "post_id"
 
     def get_object(self):
-        """is_public이 False면 작성자만 볼 수 있도록 제한 + view_count 증가"""
+        """비공개 게시물은 작성자만 조회 가능"""
         post = super().get_object()
-
-        # 비공개 게시물은 작성자만 조회 가능
         if not post.is_public and post.user != self.request.user:
             raise PermissionDenied("비공개 게시물입니다.")
 
-        # 조회수 증가 후 즉시 저장 (save() 사용)
-        post.view_count += 1
+        post.view_count += 1  # 조회수 증가
         post.save()
-
         return post
 
     def retrieve(self, request, *args, **kwargs):
@@ -65,15 +93,18 @@ class TripPostDetailView(generics.RetrieveAPIView):
         instance = self.get_object()
         serializer = self.get_serializer(instance)
 
-        # Presigned URL 생성
+        # DB에서 저장된 S3 키를 가져와 Presigned URL 생성
         map_image_url = generate_presigned_url(instance.map_image) if instance.map_image else None
         post_image_url = generate_presigned_url(instance.post_image) if instance.post_image else None
+        thumbnail_url = generate_presigned_url(instance.thumbnail) if instance.thumbnail else None
 
         return Response({
             **serializer.data,
             "map_image_url": map_image_url,
             "post_image_url": post_image_url,
+            "thumbnail_url": thumbnail_url,
         })
+
 
 class TripPostUpdateView(generics.UpdateAPIView):
     """게시글 수정 API (작성자만 가능)"""
