@@ -34,6 +34,8 @@ ALLOWED_HOSTS = []
 
 # Application definition
 CUSTOM_APPS = [
+    "drf_spectacular",
+    "drf_spectacular_sidecar",
     'follows.apps.FollowsConfig',
     'users.apps.UsersConfig',
     'likes.apps.LikesConfig',
@@ -48,6 +50,7 @@ CUSTOM_APPS = [
     "rest_framework",
     "corsheaders",
     "rest_framework_simplejwt",
+    "rest_framework_simplejwt.token_blacklist",
 ]
 
 
@@ -122,6 +125,20 @@ REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": (
         "rest_framework_simplejwt.authentication.JWTAuthentication",
     ),
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",  # Swagger 설정 추가
+}
+
+
+SPECTACULAR_SETTINGS = {
+    "TITLE": "OZAL API",
+    "DESCRIPTION": "OZAL 프로젝트의 API 문서입니다.",
+    "VERSION": "1.0.0",
+    "SERVE_INCLUDE_SCHEMA": False,
+    "SCHEMA_PATH_PREFIX": "/ozal/",  # API URL Prefix 설정
+    "SWAGGER_UI_SETTINGS": {
+        "deepLinking": True,
+        "persistAuthorization": True,
+    },
 }
 
 # AUTH_USER_MODEL = "users.User"
@@ -211,3 +228,14 @@ SIMPLE_JWT = {
     "USER_ID_FIELD": "id",
     "USER_ID_CLAIM": "user_id",
 }
+
+
+AWS_ACCESS_KEY_ID = os.getenv("AWS_ACCESS_KEY_ID")
+AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY")
+AWS_STORAGE_BUCKET_NAME = os.getenv("AWS_STORAGE_BUCKET_NAME")
+AWS_S3_REGION_NAME = os.getenv("AWS_S3_REGION_NAME", "ap-northeast-2")
+AWS_S3_CUSTOM_DOMAIN = f"https://{AWS_STORAGE_BUCKET_NAME}.s3.{AWS_S3_REGION_NAME}.amazonaws.com/"
+
+DEFAULT_FILE_STORAGE = "storages.backends.s3boto3.S3Boto3Storage"
+
+MEDIA_URL = f"https://{AWS_S3_CUSTOM_DOMAIN}/"
