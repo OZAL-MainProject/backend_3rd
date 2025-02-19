@@ -44,10 +44,10 @@ class PostDetailSerializer(serializers.ModelSerializer):
     user = serializers.StringRelatedField()
     like_count = serializers.IntegerField(source="likes_count", read_only=True)
 
+
     class Meta:
         model = Post
         fields = ("id", "title", "content", "user", "created_at", "updated_at", "like_count", "view_count")
-
 
 class PostModifySerializer(serializers.ModelSerializer):
     locations = serializers.ListField(child=serializers.DictField(), required=False)  # 장소 리스트 필드 추가

@@ -15,8 +15,6 @@ from .serializers import (
     MyPostListSerializer  # 내 게시글 목록 Serializer 추가
 )
 
-
-
 class TripPostCreateView(generics.CreateAPIView):
     """게시글 생성 API (map_image, post_image 업로드 포함)"""
     queryset = Post.objects.all()
@@ -116,6 +114,7 @@ class TripPostListView(generics.ListAPIView):
             Q(title__icontains=query) | Q(content__icontains=query),
             is_public=True,
         ).order_by("-created_at")
+
 
     def list(self, request, *args, **kwargs):
         """게시글 목록 조회 시 썸네일 포함"""
