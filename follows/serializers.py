@@ -33,7 +33,7 @@ class FollowUserSerializer(serializers.ModelSerializer):
 
 class FollowListSerializer(serializers.ModelSerializer):
     # 사용자의 팔로우/팔로워 목록을 조회하는 Serializer
-    user = UserSerializer(source="following", read_only=True)
+    user = FollowUserSerializer(source="following", read_only=True)
 
     class Meta:
         model = Follow
