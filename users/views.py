@@ -177,17 +177,20 @@ class UpdateProfileImageView(generics.UpdateAPIView):
         try:
             user = self.get_object()
 
-            # S3에 새 이미지 업로드
+            # ✅ 프로필 이미지 업로드 및 저장
             if "profile_image" in request.FILES:
-                s3_key = upload_to_s3(request.FILES["profile_image"], "profiles")  # S3 키만 반환
-                user.profile_image = f"https://{settings.AWS_STORAGE_BUCKET_NAME}.s3.{settings.AWS_S3_REGION_NAME}.amazonaws.com/{s3_key}"
+                image_url = upload_to_s3(request.FILES["profile_image"], "profiles")  # ✅ 전체 URL 반환됨
+                user.profile_image = image_url
                 user.save()
 
+            print(f"✅ 프로필 이미지 업데이트 성공: {user.profile_image}")  # 로그 추가
+
             return Response({
-                "profile_image_url": user.profile_image  # ✅ Presigned URL 대신 S3 정적 URL 반환
+                "profile_image_url": user.profile_image  # ✅ S3 URL 반환
             }, status=status.HTTP_200_OK)
+
         except Exception as e:
-            print(f"🔥 프로필 이미지 업데이트 오류: {str(e)}")  # ✅ 에러 로깅 추가
+            print(f"🔥 프로필 이미지 업데이트 오류: {str(e)}")
             return Response({"error": "서버 내부 오류 발생", "details": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 

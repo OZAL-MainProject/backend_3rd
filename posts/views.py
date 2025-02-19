@@ -26,6 +26,16 @@ class TripPostCreateView(generics.CreateAPIView):
 
     def create(self, request, *args, **kwargs):
         post_data = request.data.copy()
+
+        # JSON 필드 변환
+        if "data" in post_data:
+            try:
+                json_data = json.loads(post_data["data"])
+                post_data.update(json_data)
+                del post_data["data"]  # 원본 제거
+            except json.JSONDecodeError:
+                return Response({"error": "잘못된 JSON 형식입니다."}, status=status.HTTP_400_BAD_REQUEST)
+
         user = request.user
 
         # 이미지 URL 저장을 위한 딕셔너리
@@ -48,9 +58,11 @@ class TripPostCreateView(generics.CreateAPIView):
             post_data["content"] = json.dumps(image_urls)
 
             # 썸네일 선택 로직 추가
-            thumbnail_url = request.data.get("thumbnail")
-            if thumbnail_url not in image_urls.values():
-                thumbnail_url = image_urls.get("posts", None)  # 기본값: 게시글 이미지
+            thumbnail_url = request.data.get("thumbnail", None)
+
+            # 기본값 설정
+            if not thumbnail_url or thumbnail_url == "null":
+                thumbnail_url = image_urls.get("posts", "")
 
             post_data["thumbnail"] = thumbnail_url
 

@@ -10,7 +10,7 @@ from .models import Post
 class PostCreateSerializer(serializers.ModelSerializer):
     """게시글 작성 Serializer (장소 포함 + 썸네일 추가)"""
     locations = serializers.ListField(child=serializers.DictField(), required=False)
-    thumbnail = serializers.CharField(required=False, allow_blank=True)  # ✅ 썸네일 필드 추가
+    thumbnail = serializers.CharField(required=False, allow_blank=True, default="")  # ✅ 기본값 추가
 
     class Meta:
         model = Post

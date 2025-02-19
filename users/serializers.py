@@ -57,6 +57,7 @@ class UserProfileImageUpdateSerializer(serializers.ModelSerializer):
         fields = ["profile_image"]
 
     def validate_profile_image(self, value):
-        if not value.startswith("http"):
+        if isinstance(value, str) and not value.startswith("http"):
             raise serializers.ValidationError("올바른 URL을 입력해주세요.")
         return value
+

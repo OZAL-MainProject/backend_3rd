@@ -10,7 +10,7 @@ def is_valid_image_extension(filename):
     return filename.split(".")[-1].lower() in ALLOWED_IMAGE_EXTENSIONS
 
 def upload_to_s3(file, folder_name):
-    """S3에 이미지 업로드하는 함수 (비공개 접근)"""
+    """S3에 이미지 업로드 후 전체 URL 반환"""
     s3_client = boto3.client(
         "s3",
         region_name=settings.AWS_S3_REGION_NAME,
@@ -18,7 +18,6 @@ def upload_to_s3(file, folder_name):
         aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
     )
 
-    # 확장자 검증
     if not is_valid_image_extension(file.name):
         raise ValueError("허용되지 않은 파일 확장자입니다. jpg, jpeg, png만 지원됩니다.")
 
@@ -32,7 +31,9 @@ def upload_to_s3(file, folder_name):
         ExtraArgs={"ContentType": file.content_type, "ACL": "private"}  # 비공개 설정
     )
 
-    return file_name  # 파일명 반환 (Presigned URL이 아님)
+    # ✅ S3 전체 URL 반환
+    file_url = f"https://{settings.AWS_STORAGE_BUCKET_NAME}.s3.{settings.AWS_S3_REGION_NAME}.amazonaws.com/{file_name}"
+    return file_url
 
 
 def generate_presigned_url(s3_key, expiration=3600):
