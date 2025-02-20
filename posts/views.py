@@ -1,217 +1,178 @@
-from rest_framework import generics, status, permissions
+import random
+
+from rest_framework import status
+from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.permissions import IsAuthenticated
-from django.shortcuts import get_object_or_404
-from django.db.models import Q
-from rest_framework.exceptions import PermissionDenied
-from utils import generate_presigned_url, upload_to_s3
+from rest_framework.exceptions import PermissionDenied, NotAuthenticated, APIException, ValidationError
+from utils import upload_to_s3
+from .serializers import PostSerializer, PostDetailSerializer, PostListSerializer
+from images.models import Images, PostImages
 from .models import Post
-from .serializers import (
-    PostCreateSerializer,
-    PostDetailSerializer,
-    PostModifySerializer,
-    PostListSerializer,
-    MyPostListSerializer  # 내 게시글 목록 Serializer 추가
-)
-import json
+
+# todo: trippost(detail) update, delete
+# todo: modifing user pofile image post, update
+# todo: modifing location get, post
 
 
-class TripPostCreateView(generics.CreateAPIView):
-    """게시글 생성 API (map_image, post_image 업로드 포함)"""
-    queryset = Post.objects.all()
-    serializer_class = PostCreateSerializer
-    permission_classes = [permissions.IsAuthenticated]
-    parser_classes = (MultiPartParser, FormParser)  # 이미지 업로드 지원
+class Thumbnail(APIView):
+    def get(self, request):
+        try:
+            urls = []
+            num = 0
+            last_image = PostImages.objects.last()
+            numbers = [ random.randint(1, last_image.id) for _ in range(100) ]
+            for number in numbers:
+                post = PostImages.objects.get(id=number)
+                if num < 5:
+                    if post.post.is_public:
+                        if not post.image.url in urls:
+                            urls.append(post.image.url)
+                            num+=1
 
-    def create(self, request, *args, **kwargs):
-        post_data = request.data.copy()
+            return Response({'urls': urls}, status=status.HTTP_200_OK)
 
-        # JSON 필드 변환
-        if "data" in post_data:
-            try:
-                json_data = json.loads(post_data["data"])
-                post_data.update(json_data)
-                del post_data["data"]  # 원본 제거
-            except json.JSONDecodeError:
-                return Response({"error": "잘못된 JSON 형식입니다."}, status=status.HTTP_400_BAD_REQUEST)
+        except PostImages.DoesNotExist:
+            return Response({'message': "url not found"}, status=status.HTTP_404_NOT_FOUND)
 
-        user = request.user
 
-        # 이미지 URL 저장을 위한 딕셔너리
-        image_urls = {}
+class TripPostView(APIView):
+    """ 인증받은 유저 기준 CRUD """
+    permission_classes = [IsAuthenticated]
+    parser_classes = [MultiPartParser, FormParser]
+
+    def post(self, request):
+        """
+        인증받은 유저가 form-data로 데이터를 보내면
+        해당 내용을 MultiPartParser, FormParser를 아용하여 Parseing 하고
+        upload_to_s3 함수를 이용하여 이미지 데이터만 따로 저장 및 url 확보하여
+        Post 객체 생성 및 DB 저장 후 각 Image를 images table에 저장하고
+        post_images table에 저장 후 HTTP_201_CREATED를 반환한다.
+        """
+        images = []
+        response = {}
 
         try:
-            # 지도 이미지 업로드
-            if "map_image" in request.FILES:
-                map_image_url = upload_to_s3(request.FILES["map_image"], "maps")
-                image_urls["maps"] = map_image_url  # ✅ maps 구분 추가
-                post_data["map_image"] = map_image_url
-
-            # 게시글 이미지 업로드
-            if "post_image" in request.FILES:
-                post_image_url = upload_to_s3(request.FILES["post_image"], "posts")
-                image_urls["posts"] = post_image_url  # ✅ posts 구분 추가
-                post_data["post_image"] = post_image_url
-
-            # 게시글 content에 JSON 형식으로 이미지 URL 저장
-            post_data["content"] = json.dumps(image_urls)
-
-            # 썸네일 선택 로직 추가
-            thumbnail_url = request.data.get("thumbnail", None)
-
-            # 기본값 설정
-            if not thumbnail_url or thumbnail_url == "null":
-                thumbnail_url = image_urls.get("posts", "")
-
-            post_data["thumbnail"] = thumbnail_url
+            # 본문 이미지 업로드 처리
+            if "images" in request.FILES:
+                post_images = request.FILES.getlist("images")  # getlist() 사용
+                for image in post_images:
+                    try:
+                        image_url = upload_to_s3(image, "posts")
+                        images.append(image_url)
+                    except Exception as e:
+                        raise APIException(f"Post image upload failed: {str(e)}")
 
             # 게시글 생성
-            serializer = self.get_serializer(data=post_data)
-            serializer.is_valid(raise_exception=True)
-            post = serializer.save(user=user)  # 게시글 저장
+            serializer = PostSerializer(data=request.data)
+            thumbnail_url = images[0] if len(images) > 0 else None
+            try:
+                if serializer.is_valid():
+                    post = serializer.save(user=request.user, thumbnail=thumbnail_url)
+            except ValidationError:
+                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            except Exception as e:
+                raise APIException(f"Post creation failed: {str(e)}")
 
-            # 응답에 업로드된 이미지 URL 포함
-            response_data = serializer.data
-            response_data["map_image_url"] = image_urls.get("maps")
-            response_data["post_image_url"] = image_urls.get("posts")
-            response_data["thumbnail_url"] = thumbnail_url
+            # 이미지 정보 저장
+            try:
+                for image in images:
+                    image_instance = Images.objects.create(url=image)
+                    PostImages.objects.create(post=post, image=image_instance)
+            except Exception as e:
+                raise APIException(f"Post image association failed: {str(e)}")
 
-            return Response(response_data, status=status.HTTP_201_CREATED)
+            response["message"] = "Post created successfully"
+            return Response(response, status=status.HTTP_201_CREATED)
+
+        except NotAuthenticated:
+            return Response({"error": "Authentication required."}, status=status.HTTP_401_UNAUTHORIZED)
+        except APIException as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        except Exception as e:
+            return Response({"error": f"Unexpected error: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    def get(self, request):
+        """
+        인증받은 유저가 본인의 게시물을 조회하며
+        만약 게시물이 없을 시 HTTP_404_NOT_FOUND를 반환한다.
+        """
+        try:
+            posts = Post.objects.filter(user=request.user)
+
+            if posts is None:
+                return Response({"error": "Post not found."}, status=status.HTTP_404_NOT_FOUND)
+
+            serializer = PostListSerializer(posts, many=True)
+
+            return Response(serializer.data, status=status.HTTP_200_OK)
 
         except Exception as e:
-            print(f"🔥 게시글 생성 오류: {str(e)}")  # ✅ 에러 로깅 추가
-            return Response({"error": "서버 내부 오류 발생", "details": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            raise APIException(f"Failed to retrieve posts: {str(e)}")
 
 
-class TripPostDetailView(generics.RetrieveAPIView):
-    """게시글 상세 조회 API (조회 시 Presigned URL 포함)"""
-    queryset = Post.objects.all()
-    serializer_class = PostDetailSerializer
-    lookup_url_kwarg = "post_id"
-
-    def get_object(self):
-        """비공개 게시물은 작성자만 조회 가능"""
-        post = super().get_object()
-        if not post.is_public and post.user != self.request.user:
-            raise PermissionDenied("비공개 게시물입니다.")
-
-        post.view_count += 1  # 조회수 증가
-        post.save()
-        return post
-
-    def retrieve(self, request, *args, **kwargs):
-        """게시글 상세 조회 시 S3 Presigned URL 포함"""
-        instance = self.get_object()
-        serializer = self.get_serializer(instance)
-
-        # DB에서 저장된 S3 키를 가져와 Presigned URL 생성
-        map_image_url = generate_presigned_url(instance.map_image) if instance.map_image else None
-        post_image_url = generate_presigned_url(instance.post_image) if instance.post_image else None
-        thumbnail_url = generate_presigned_url(instance.thumbnail) if instance.thumbnail else None
-
-        return Response({
-            **serializer.data,
-            "map_image_url": map_image_url,
-            "post_image_url": post_image_url,
-            "thumbnail_url": thumbnail_url,
-        })
-
-
-class TripPostUpdateView(generics.UpdateAPIView):
-    """게시글 수정 API (작성자만 가능)"""
-    queryset = Post.objects.all()
-    serializer_class = PostModifySerializer
+class PostDetailView(APIView):
     permission_classes = [IsAuthenticated]
 
-    def get_object(self):
-        """게시글 작성자만 수정 가능"""
-        post = get_object_or_404(Post, id=self.kwargs["post_id"])
-        if post.user != self.request.user:
-            raise PermissionDenied("게시글 작성자만 수정할 수 있습니다.")  # 수정
-        return post
+    def get(self, request, post_id):
+        try:
+            post = Post.objects.get(id=post_id)
+
+            if post.is_public == False and post.user != request.user:
+                raise PermissionDenied("비공개 게시물입니다.")
+
+            serializer = PostDetailSerializer(post)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
-class TripPostDeleteView(generics.DestroyAPIView):
-    """게시글 삭제 API (작성자만 가능)"""
-    queryset = Post.objects.all()
+
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    def delete(self, request, post_id):
+        try:
+            post = Post.objects.get(id=post_id)
+            if post.user == request.user:
+                post.delete()
+                return Response({"message": "Post deleted successfully"}, status=status.HTTP_200_OK)
+            else:
+                return Response({"message": "Post not found."}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    parser_classes = [MultiPartParser, FormParser]
+
+    def put(self, request, post_id):
+        try:
+            post = Post.objects.get(id=post_id)
+            serializer = PostDetailSerializer(post, data=request.data, partial=True)
+            if serializer.is_valid():
+                serializer.save()
+                return Response({"message": "Post updated successfully"}, status=status.HTTP_200_OK)
+            else:
+                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+class PostListView(APIView):
     permission_classes = [IsAuthenticated]
 
-    def get_serializer_class(self):
-        return None
+    def get(self, request, user_id):
+        try:
+            # 기본적으로 해당 user_id의 모든 Post 가져오기
+            posts = Post.objects.filter(user=user_id)
 
-    def get_object(self):
-        """게시글 작성자만 삭제 가능"""
-        post = get_object_or_404(Post, id=self.kwargs["post_id"])
-        if post.user != self.request.user:
-            raise PermissionDenied("게시글 작성자만 삭제할 수 있습니다.")  # 수정
-        return post
+            # 요청한 유저와 게시글 작성자가 다르면 공개된 게시글만 필터링
+            if user_id != request.user.id:
+                posts = posts.filter(is_public=True)
 
+            serializer = PostListSerializer(posts, many=True)
+            return Response(serializer.data, status=status.HTTP_200_OK)
 
-# 전체 게시글 조회
-class TripPostListView(generics.ListAPIView):
-    """게시글 목록 조회 API (썸네일 포함)"""
-    serializer_class = PostListSerializer
-    permission_classes = [IsAuthenticated]
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-    def get_queryset(self):
-        query = self.request.query_params.get("q", "").strip()
-        return Post.objects.filter(
-            Q(title__icontains=query) | Q(content__icontains=query),
-            is_public=True,
-        ).order_by("-created_at")
-
-
-    def list(self, request, *args, **kwargs):
-        """게시글 목록 조회 시 썸네일 포함"""
-        queryset = self.get_queryset()
-        serializer = self.get_serializer(queryset, many=True)
-
-        # 각 게시글에 대한 Presigned URL 생성 (썸네일 포함)
-        posts_data = []
-        for post in queryset:
-            post_data = serializer.data[queryset.index(post)]
-            post_data["thumbnail_url"] = generate_presigned_url(post.post_image, expiration=86400) if post.post_image else None
-            posts_data.append(post_data)
-
-        return Response(posts_data, status=status.HTTP_200_OK)
-
-
-class UserPostListView(generics.ListAPIView):
-    """특정 사용자의 게시글 목록 조회 API (비로그인 사용자는 접근 불가)"""
-    serializer_class = MyPostListSerializer
-    permission_classes = [permissions.IsAuthenticated]  # 로그인 필수
-
-    def get_queryset(self):
-        """로그인한 유저만 접근 가능하며, 본인의 게시글은 전체 조회 가능 / 다른 유저의 게시글은 공개된 게시글만 조회"""
-        user_id = self.kwargs.get("user_id")
-
-        if self.request.user.id == int(user_id):
-            # 본인의 게시글은 모두 조회 가능
-            return Post.objects.filter(user_id=user_id).order_by("-created_at")
-        else:
-            # 다른 사용자의 게시글은 공개된 게시글만 조회 가능
-            return Post.objects.filter(user_id=user_id, is_public=True).order_by("-created_at")
-
-    def list(self, request, *args, **kwargs):
-        if not request.user.is_authenticated:
-            return Response({"detail": "로그인이 필요합니다."}, status=status.HTTP_401_UNAUTHORIZED)
-
-        queryset = self.get_queryset()
-        serializer = self.get_serializer(queryset, many=True)
-
-        # 방문한 장소 목록 추가
-        visited_locations = set()
-        for post in queryset:
-            for location in post.post_location.all():
-                visited_locations.add({
-                    "id": location.id,
-                    "address": location.address,
-                    "latitude": location.latitude,
-                    "longitude": location.longitude
-                })
-
-        return Response({
-            "posts": serializer.data,
-            "visited_locations": list(visited_locations)
-        }, status=status.HTTP_200_OK)
