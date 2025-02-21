@@ -328,6 +328,10 @@ pyvenv.cfg
 pip-selfcheck.json
 
 static
+certbot/www/
+certbot/conf/live/
+certbot/conf/archive/
+certbot/conf/renewal/
 
 # End of https://www.toptal.com/developers/gitignore/api/venv
 

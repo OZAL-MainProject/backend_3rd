@@ -7,7 +7,7 @@ from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.exceptions import PermissionDenied, NotAuthenticated, APIException, ValidationError
 from utils import upload_to_s3
-from .serializers import PostSerializer, PostDetailSerializer, PostListSerializer
+from .serializers import PostSerializer, PostDetailSerializer, PostListSerializer, AuthUserPostListSerializer
 from images.models import Images, PostImages
 from .models import Post
 
@@ -84,6 +84,7 @@ class TripPostView(APIView):
                 raise APIException(f"Post image association failed: {str(e)}")
 
             response["message"] = "Post created successfully"
+            response["post_id"] = post.id
             return Response(response, status=status.HTTP_201_CREATED)
 
         except NotAuthenticated:
@@ -104,7 +105,7 @@ class TripPostView(APIView):
             if posts is None:
                 return Response({"error": "Post not found."}, status=status.HTTP_404_NOT_FOUND)
 
-            serializer = PostListSerializer(posts, many=True)
+            serializer = AuthUserPostListSerializer(posts, many=True)
 
             return Response(serializer.data, status=status.HTTP_200_OK)
 

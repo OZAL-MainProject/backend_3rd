@@ -12,7 +12,18 @@ class PostSerializer(serializers.ModelSerializer):
 class PostListSerializer(serializers.ModelSerializer):
     class Meta:
         model = Post
-        fields = ("title", "thumbnail", "content", "created_at")
+        fields = ("id", "title", "thumbnail", "content", "created_at")
+
+class AuthUserPostListSerializer(serializers.ModelSerializer):
+
+    post_id = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Post
+        fields = ("post_id", "title", "thumbnail", "content", "created_at")
+
+    def get_post_id(self, obj):
+        return obj.id
 
 
 class PostDetailSerializer(serializers.ModelSerializer):
