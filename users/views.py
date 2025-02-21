@@ -63,15 +63,20 @@ class KakaoLoginView(APIView):
         profile_image = user_info_json["properties"].get("profile_image", "")
 
         # 3️⃣ 유저 저장
-        user, created = User.objects.update_or_create(
+        user, created = User.objects.get_or_create(
             provider_id=kakao_id,
             defaults={
                 "email": email,
-                "nickname": nickname,
-                "profile_image": profile_image,
                 "provider": "kakao",
             },
         )
+
+        if not user.nickname:
+            user.nickname = nickname
+        if not user.profile_image:
+            user.profile_image = profile_image
+
+        user.save(update_fields=["nickname", "profile_image"])
 
         # 4️⃣ JWT 토큰 발급
         refresh = RefreshToken.for_user(user)
